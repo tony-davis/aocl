@@ -58,8 +58,18 @@ else()
 endif()
 
 # Execute the configuration command
+# Note: Explicitly pass CMAKE_C_COMPILER and CMAKE_CXX_COMPILER to ensure proper compiler propagation
+# This fixes issues with Ninja generator on Windows where CompilerToolSet variable expansion was incorrect
 execute_process(
-    COMMAND cmake -G ${CMAKE_GENERATOR} -S ${UTILS_DIR} -B ${CMAKE_BINARY_DIR}/aocl-utils/build_dir -DALCI_EXAMPLES=OFF -DCMAKE_CONFIGURATION_TYPES=${CMAKE_CONFIGURATION_TYPES} -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/aocl-utils/install_package ${CompilerToolSet}
+    COMMAND cmake -G ${CMAKE_GENERATOR} -S ${UTILS_DIR} -B ${CMAKE_BINARY_DIR}/aocl-utils/build_dir 
+        -DALCI_EXAMPLES=OFF 
+        -DCMAKE_CONFIGURATION_TYPES=${CMAKE_CONFIGURATION_TYPES} 
+        -DCMAKE_INSTALL_LIBDIR=lib 
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} 
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} 
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/aocl-utils/install_package 
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${UTILS_DIR} 
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
