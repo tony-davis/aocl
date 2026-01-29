@@ -1,7 +1,7 @@
 [submodule "submodules/blis"]
 	path = submodules/blis
-	url = https://github.com/amd/blis.git
-	branch = master
+	url = https://github.com/tony-davis/blis.git
+	branch = windows-therock-integration
 [submodule "submodules/libflame"]
 	path = submodules/libflame
 	url = https://github.com/amd/libflame.git
