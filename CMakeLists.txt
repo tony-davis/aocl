@@ -362,48 +362,75 @@ if(BUILD_SHARED_LIBS AND WIN32)
 endif()
 
 # Create the library target
-if(BUILD_SHARED_LIBS)
-    add_library (${PROJECT_NAME} SHARED ${OBJECT_FILES})
-    set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPENDENT_LIBS})
+# Handle case where OBJECT_FILES is empty (when using modern add_subdirectory() approach)
+if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
+    # When using add_subdirectory() for BLIS, we need to create a custom target
+    # that copies/renames the blis library to aocl
+    message(STATUS "Using modern CMake approach: aliasing blis as aocl library")
     
-    if(ENABLE_MULTITHREADING)
-        if(WIN32 OR NOT OpenMP_libomp_LIBRARY)
-            target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_C)
-        else()
-            target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenMP_libomp_LIBRARY})
-        endif()
-    endif()
+    # Create a custom target that depends on blis and copies it
+    add_custom_target(${PROJECT_NAME} ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+                $<TARGET_FILE:blis>
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
+        DEPENDS blis
+        COMMENT "Creating ${PROJECT_NAME} library from blis"
+    )
     
-    if(WIN32)
-        target_link_options(${PROJECT_NAME} PRIVATE "/DEF:${MERGED_DEF}")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /dll")
-		if(CMAKE_Fortran_COMPILER)
-	        target_link_directories(${PROJECT_NAME} PRIVATE "C:/Program Files (x86)/Intel/oneAPI/compiler/latest/lib")
-		endif()
-    else()
-        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=ld")
-        endif()
-        add_library (${PROJECT_NAME}-static STATIC ${OBJECT_FILES})
-        set_target_properties(${PROJECT_NAME}-static PROPERTIES LINKER_LANGUAGE CXX)
-        set_target_properties(${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-        install(TARGETS ${PROJECT_NAME}-static LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                )
-    endif()
+    # Install the renamed library
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+elseif(NOT OBJECT_FILES)
+    message(FATAL_ERROR "No OBJECT_FILES provided and BLIS not enabled. Cannot create library.")
 else()
-    add_library (${PROJECT_NAME} STATIC ${OBJECT_FILES})
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    # Original approach using OBJECT_FILES
+    if(BUILD_SHARED_LIBS)
+        add_library (${PROJECT_NAME} SHARED ${OBJECT_FILES})
+        set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPENDENT_LIBS})
+        
+        if(ENABLE_MULTITHREADING)
+            if(WIN32 OR NOT OpenMP_libomp_LIBRARY)
+                target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_C)
+            else()
+                target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenMP_libomp_LIBRARY})
+            endif()
+        endif()
+        
+        if(WIN32)
+            target_link_options(${PROJECT_NAME} PRIVATE "/DEF:${MERGED_DEF}")
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /dll")
+            if(CMAKE_Fortran_COMPILER)
+                target_link_directories(${PROJECT_NAME} PRIVATE "C:/Program Files (x86)/Intel/oneAPI/compiler/latest/lib")
+            endif()
+        else()
+            if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=ld")
+            endif()
+            add_library (${PROJECT_NAME}-static STATIC ${OBJECT_FILES})
+            set_target_properties(${PROJECT_NAME}-static PROPERTIES LINKER_LANGUAGE CXX)
+            set_target_properties(${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+            install(TARGETS ${PROJECT_NAME}-static LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+                    )
+        endif()
+    else()
+        add_library (${PROJECT_NAME} STATIC ${OBJECT_FILES})
+        set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+    endif()
 endif()
 
-# Install the library
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        )
+# Install the library (only if using traditional approach with OBJECT_FILES)
+if(OBJECT_FILES)
+    install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            )
+else()
+    # Installation handled by custom command above for modern approach
+endif()
 
 # === SYMBOL RENAMING INTEGRATION ===
 # Single variable to control symbol renaming: if empty, renaming is disabled
