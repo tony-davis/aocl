@@ -94,7 +94,7 @@ option(USE_SOURCES_FROM_SUBMODULES "Enable building and testing libraries using 
 # Set library source paths based on USE_SOURCES_FROM_SUBMODULES option
 if(USE_SOURCES_FROM_SUBMODULES)
     message(STATUS "Using sources from submodules")
-    set(SUBMODULES_BASE_PATH "${CMAKE_SOURCE_DIR}/submodules")
+    set(SUBMODULES_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules")
     
     # Set all library paths using a loop for cleaner code
     foreach(LIB_VAR UTILS BLAS LAPACK SPARSE CRYPTO LIBM COMPRESSION DA LIBMEM)
