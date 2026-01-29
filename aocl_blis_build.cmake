@@ -45,11 +45,8 @@ set(BLIS_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/blis/install_package" CACHE PATH "B
 # - Targets are available for use in AOCL
 add_subdirectory("${BLIS_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/blis/build_dir" EXCLUDE_FROM_ALL)
 
-# Override BLIS's install prefix to match AOCL's expected layout
-# Note: This must be done AFTER add_subdirectory() to override BLIS's setting
-set_target_properties(blis PROPERTIES
-    INSTALL_PREFIX "${BLIS_INSTALL_PREFIX}"
-)
+# Note: BLIS will use its own CMAKE_INSTALL_PREFIX settings from add_subdirectory()
+# We don't need to override the target properties here.
 
 message(STATUS "BLIS configured successfully via add_subdirectory()")
 message(STATUS "BLIS will install to: ${BLIS_INSTALL_PREFIX}")
