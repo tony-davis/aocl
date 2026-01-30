@@ -399,8 +399,10 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
     
     # Install BLIS headers
     # BLIS generates headers in its build directory during configuration
-    # Use BLIS_BINARY_DIR variable set by aocl_blis_build.cmake
-    install(DIRECTORY "${BLIS_BINARY_DIR}/include/"
+    # The path is CMAKE_BINARY_DIR (parent, i.e., build/) + /blis/build_dir/include
+    # But in install context, CMAKE_BINARY_DIR may not be set correctly,
+    # so we use PROJECT_BINARY_DIR which is the build-aocl directory
+    install(DIRECTORY "${PROJECT_BINARY_DIR}/../blis/build_dir/include/"
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             FILES_MATCHING PATTERN "*.h")
 elseif(NOT OBJECT_FILES)
