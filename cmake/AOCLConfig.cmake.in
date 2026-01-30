@@ -1,0 +1,31 @@
+# AOCLConfig.cmake - CMake package config for AOCL-BLAS
+#
+# This file is installed alongside AOCLTargets.cmake to enable:
+#   find_package(AOCL)
+#   target_link_libraries(mytarget PRIVATE AOCL::AOCL)
+#
+# AOCL provides the following IMPORTED targets:
+#   AOCL::AOCL - The AOCL BLAS library (BLIS-based)
+#
+# This library provides:
+#   - BLAS API (ILP64 support)
+#   - CBLAS API
+#   - BLIS native API
+
+@PACKAGE_INIT@
+
+# Include the exported targets
+include("${CMAKE_CURRENT_LIST_DIR}/AOCLTargets.cmake")
+
+# Provide variables for compatibility with legacy find modules
+set(AOCL_FOUND TRUE)
+set(AOCL_VERSION "5.2.0")
+set(AOCL_LIBRARIES AOCL::AOCL)
+
+# Check that all required components are available
+check_required_components(AOCL)
+
+# Print useful info when package is found
+if(NOT AOCL_FIND_QUIETLY)
+    message(STATUS "Found AOCL: ${PACKAGE_PREFIX_DIR} (version ${AOCL_VERSION})")
+endif()

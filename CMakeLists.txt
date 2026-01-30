@@ -9,6 +9,9 @@ if(NOT DEFINED AOCL_SINGLE_LIBRARY_NAME)
 endif()
 project(${AOCL_SINGLE_LIBRARY_NAME} LANGUAGES C CXX)
 
+# Use GNUInstallDirs for standard install paths
+include(GNUInstallDirs)
+
 # Set the build configurations
 if(NOT DEFINED CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "Build configurations" FORCE)
@@ -377,17 +380,24 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
     endif()
     
     # Create a custom target that depends on blis and copies it
-    add_custom_target(${PROJECT_NAME} ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-                $<TARGET_FILE:${BLIS_TARGET_NAME}>
-                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        DEPENDS ${BLIS_TARGET_NAME}
-        COMMENT "Creating ${PROJECT_NAME} library from ${BLIS_TARGET_NAME}"
-    )
+    # Create an INTERFACE library that wraps BLIS with proper CMake export support
+    # Use uppercase AOCL for the target to match the package namespace
+    add_library(AOCL INTERFACE)
+    target_link_libraries(AOCL INTERFACE ${BLIS_TARGET_NAME})
     
-    # Install the renamed library
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+    # Create an alias for AOCL::AOCL namespace
+    add_library(AOCL::AOCL ALIAS AOCL)
+    
+    # Export the target so it can be found by find_package()
+    install(TARGETS AOCL EXPORT AOCLTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    
+    # Also install the underlying BLIS library renamed as aocl
+    install(FILES $<TARGET_FILE:${BLIS_TARGET_NAME}>
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RENAME ${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 elseif(NOT OBJECT_FILES)
     message(FATAL_ERROR "No OBJECT_FILES provided and BLIS not enabled. Cannot create library.")
 else()
@@ -432,12 +442,19 @@ endif()
 
 # Install the library (only if using traditional approach with OBJECT_FILES)
 if(OBJECT_FILES)
-    install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-            )
+    # For OBJECT_FILES approach, the target is named ${PROJECT_NAME} (aocl)
+    # Rename it to AOCL for consistency with the modern approach
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME AOCL EXPORT_NAME AOCL)
+    
+    install(TARGETS ${PROJECT_NAME} EXPORT AOCLTargets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    
+    # Create namespace alias for consistent interface
+    add_library(AOCL::AOCL ALIAS ${PROJECT_NAME})
 else()
-    # Installation handled by custom command above for modern approach
+    # Installation handled above for modern add_subdirectory approach
 endif()
 
 # === SYMBOL RENAMING INTEGRATION ===
@@ -584,6 +601,36 @@ function(add_symbol_renaming_target)
         message(STATUS "  Example: -DSYMBOL_RENAME_PREFIX=AOCL_ or -DSYMBOL_RENAME_PREFIX=AOCL51_ etc.")
     endif()
 endfunction()
+
+# === CMake Package Export Configuration ===
+# Generate and install CMake package files for find_package(AOCL) support
+include(CMakePackageConfigHelpers)
+
+# Export targets to AOCLTargets.cmake
+install(EXPORT AOCLTargets
+        FILE AOCLTargets.cmake
+        NAMESPACE AOCL::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AOCL)
+
+# Create AOCLConfig.cmake
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/AOCLConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/AOCLConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AOCL
+)
+
+# Create version file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/AOCLConfigVersion.cmake"
+    VERSION 5.2.0
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install package config files
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/AOCLConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/AOCLConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AOCL)
 
 # Call the function to set up symbol renaming
 add_symbol_renaming_target()
