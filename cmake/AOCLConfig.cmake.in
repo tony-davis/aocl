@@ -1,6 +1,6 @@
 # AOCLConfig.cmake - CMake package config for AOCL-BLAS
 #
-# This file is installed alongside AOCLTargets.cmake to enable:
+# This file enables:
 #   find_package(AOCL)
 #   target_link_libraries(mytarget PRIVATE AOCL::AOCL)
 #
@@ -14,13 +14,30 @@
 
 @PACKAGE_INIT@
 
-# Include the exported targets
-include("${CMAKE_CURRENT_LIST_DIR}/AOCLTargets.cmake")
+# Determine library name based on platform
+if(WIN32)
+    set(_AOCL_LIB_NAME "aocl.lib")
+else()
+    set(_AOCL_LIB_NAME "libaocl.a")
+endif()
+
+# Find the library
+set_and_check(AOCL_LIBRARY "@PACKAGE_CMAKE_INSTALL_LIBDIR@/${_AOCL_LIB_NAME}")
+
+# Create IMPORTED target if it doesn't exist
+if(NOT TARGET AOCL::AOCL)
+    add_library(AOCL::AOCL STATIC IMPORTED)
+    set_target_properties(AOCL::AOCL PROPERTIES
+        IMPORTED_LOCATION "${AOCL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@"
+    )
+endif()
 
 # Provide variables for compatibility with legacy find modules
 set(AOCL_FOUND TRUE)
 set(AOCL_VERSION "5.2.0")
 set(AOCL_LIBRARIES AOCL::AOCL)
+set(AOCL_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 
 # Check that all required components are available
 check_required_components(AOCL)

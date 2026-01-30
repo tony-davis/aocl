@@ -380,21 +380,9 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
     endif()
     
     # Create a custom target that depends on blis and copies it
-    # Create an INTERFACE library that wraps BLIS with proper CMake export support
-    # Use uppercase AOCL for the target to match the package namespace
-    add_library(AOCL INTERFACE)
-    target_link_libraries(AOCL INTERFACE ${BLIS_TARGET_NAME})
-    
-    # Create an alias for AOCL::AOCL namespace
-    add_library(AOCL::AOCL ALIAS AOCL)
-    
-    # Export the target so it can be found by find_package()
-    install(TARGETS AOCL EXPORT AOCLTargets
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    
-    # Also install the underlying BLIS library renamed as aocl
+    # Install the underlying BLIS library renamed as aocl
+    # We can't export BLIS's internal target (it doesn't export itself),
+    # so we copy the library file and create an IMPORTED target in the config
     install(FILES $<TARGET_FILE:${BLIS_TARGET_NAME}>
             DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RENAME ${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -442,17 +430,12 @@ endif()
 
 # Install the library (only if using traditional approach with OBJECT_FILES)
 if(OBJECT_FILES)
-    # For OBJECT_FILES approach, the target is named ${PROJECT_NAME} (aocl)
-    # Rename it to AOCL for consistency with the modern approach
-    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME AOCL EXPORT_NAME AOCL)
-    
-    install(TARGETS ${PROJECT_NAME} EXPORT AOCLTargets
+    # For OBJECT_FILES approach, just install the library
+    # The CMake package config will create the IMPORTED AOCL::AOCL target
+    install(TARGETS ${PROJECT_NAME}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    
-    # Create namespace alias for consistent interface
-    add_library(AOCL::AOCL ALIAS ${PROJECT_NAME})
 else()
     # Installation handled above for modern add_subdirectory approach
 endif()
@@ -602,21 +585,17 @@ function(add_symbol_renaming_target)
     endif()
 endfunction()
 
-# === CMake Package Export Configuration ===
+# === CMake Package Configuration ===
 # Generate and install CMake package files for find_package(AOCL) support
 include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
-# Export targets to AOCLTargets.cmake
-install(EXPORT AOCLTargets
-        FILE AOCLTargets.cmake
-        NAMESPACE AOCL::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AOCL)
-
-# Create AOCLConfig.cmake
+# Create AOCLConfig.cmake with proper path substitution
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/AOCLConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/AOCLConfig.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AOCL
+    PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
 )
 
 # Create version file
