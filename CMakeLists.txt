@@ -380,12 +380,18 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
     endif()
     
     # Create a custom target that depends on blis and copies it
-    # Install the underlying BLIS library renamed as aocl
-    # We can't export BLIS's internal target (it doesn't export itself),
-    # so we copy the library file and create an IMPORTED target in the config
-    install(FILES $<TARGET_FILE:${BLIS_TARGET_NAME}>
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RENAME ${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    # Set BLIS output name to match our AOCL naming before installing
+    # This renames the library during build to avoid needing post-install renaming
+    set_target_properties(${BLIS_TARGET_NAME} PROPERTIES
+        OUTPUT_NAME ${PROJECT_NAME}
+        ARCHIVE_OUTPUT_NAME ${PROJECT_NAME}
+    )
+    
+    # Install the BLIS library (now named as aocl)
+    install(TARGETS ${BLIS_TARGET_NAME}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 elseif(NOT OBJECT_FILES)
     message(FATAL_ERROR "No OBJECT_FILES provided and BLIS not enabled. Cannot create library.")
 else()
