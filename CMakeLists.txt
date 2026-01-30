@@ -396,6 +396,12 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    
+    # Install BLIS headers
+    # BLIS generates headers in its build directory during configuration
+    install(DIRECTORY "${CMAKE_BINARY_DIR}/blis/build_dir/include/"
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            FILES_MATCHING PATTERN "*.h")
 elseif(NOT OBJECT_FILES)
     message(FATAL_ERROR "No OBJECT_FILES provided and BLIS not enabled. Cannot create library.")
 else()
