@@ -387,6 +387,10 @@ if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
         ARCHIVE_OUTPUT_NAME ${PROJECT_NAME}
     )
     
+    # Create an ALL target to ensure BLIS gets built
+    # (BLIS is added with EXCLUDE_FROM_ALL, so it won't build without this)
+    add_custom_target(${PROJECT_NAME} ALL DEPENDS ${BLIS_TARGET_NAME})
+    
     # Install the BLIS library (now named as aocl)
     install(TARGETS ${BLIS_TARGET_NAME}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
