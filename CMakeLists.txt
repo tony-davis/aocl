@@ -366,15 +366,23 @@ endif()
 if(NOT OBJECT_FILES AND ENABLE_AOCL_BLAS)
     # When using add_subdirectory() for BLIS, we need to create a custom target
     # that copies/renames the blis library to aocl
-    message(STATUS "Using modern CMake approach: aliasing blis as aocl library")
+    # BLIS creates either libblis-static or libblis-shared target
+    message(STATUS "Using modern CMake approach: aliasing libblis-static as aocl library")
+    
+    # Determine the BLIS target name based on build type
+    if(BUILD_SHARED_LIBS)
+        set(BLIS_TARGET_NAME "libblis-shared")
+    else()
+        set(BLIS_TARGET_NAME "libblis-static")
+    endif()
     
     # Create a custom target that depends on blis and copies it
     add_custom_target(${PROJECT_NAME} ALL
         COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-                $<TARGET_FILE:blis>
+                $<TARGET_FILE:${BLIS_TARGET_NAME}>
                 ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}
-        DEPENDS blis
-        COMMENT "Creating ${PROJECT_NAME} library from blis"
+        DEPENDS ${BLIS_TARGET_NAME}
+        COMMENT "Creating ${PROJECT_NAME} library from ${BLIS_TARGET_NAME}"
     )
     
     # Install the renamed library
