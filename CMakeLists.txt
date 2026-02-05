@@ -95,9 +95,16 @@ option(ENABLE_TESTS "Enable building and running library functionality tests" OF
 option(USE_SOURCES_FROM_SUBMODULES "Enable building and testing libraries using sources from submodules" ON)
 
 # Set library source paths based on USE_SOURCES_FROM_SUBMODULES option
+# When SOURCE_DIR is set (e.g. by a superproject like TheRock that builds AOCL from
+# a different source tree), use it so submodules are found in the actual AOCL source.
 if(USE_SOURCES_FROM_SUBMODULES)
     message(STATUS "Using sources from submodules")
-    set(SUBMODULES_BASE_PATH "${CMAKE_SOURCE_DIR}/submodules")
+    if(SOURCE_DIR)
+        set(SUBMODULES_BASE_PATH "${SOURCE_DIR}/submodules")
+        message(STATUS "Using SOURCE_DIR for submodules: ${SUBMODULES_BASE_PATH}")
+    else()
+        set(SUBMODULES_BASE_PATH "${CMAKE_SOURCE_DIR}/submodules")
+    endif()
     
     # Set all library paths using a loop for cleaner code
     foreach(LIB_VAR UTILS BLAS LAPACK SPARSE CRYPTO LIBM COMPRESSION DA LIBMEM)
