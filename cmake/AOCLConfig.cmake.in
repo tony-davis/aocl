@@ -24,12 +24,16 @@ endif()
 # Find the library
 set_and_check(AOCL_LIBRARY "@PACKAGE_CMAKE_INSTALL_LIBDIR@/${_AOCL_LIB_NAME}")
 
+# BLIS/AOCL-BLAS installs public headers (blis.h, cblas.h) under include/amdzen/
+# Expose both base include dir and amdzen so #include "blis.h" and #include <cblas.h> resolve
+set(_AOCL_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@;@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@/amdzen")
+
 # Create IMPORTED target if it doesn't exist
 if(NOT TARGET AOCL::AOCL)
     add_library(AOCL::AOCL STATIC IMPORTED)
     set_target_properties(AOCL::AOCL PROPERTIES
         IMPORTED_LOCATION "${AOCL_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@"
+        INTERFACE_INCLUDE_DIRECTORIES "${_AOCL_INCLUDE_DIRS}"
     )
 endif()
 
@@ -37,7 +41,7 @@ endif()
 set(AOCL_FOUND TRUE)
 set(AOCL_VERSION "5.2.0")
 set(AOCL_LIBRARIES AOCL::AOCL)
-set(AOCL_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set(AOCL_INCLUDE_DIRS "${_AOCL_INCLUDE_DIRS}")
 
 # Check that all required components are available
 check_required_components(AOCL)
