@@ -11,30 +11,22 @@ project(${AOCL_SINGLE_LIBRARY_NAME} LANGUAGES C CXX)
 
 # Preserve install dirs set by a superproject (e.g. TheRock's lib/host-math layout)
 # before GNUInstallDirs overwrites them (it uses CACHE FORCE for defaults).
-set(_aocl_saved_libdir "")
-set(_aocl_saved_includedir "")
-set(_aocl_saved_bindir "")
-if(DEFINED CACHE{CMAKE_INSTALL_LIBDIR} AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "lib" AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "lib64")
-  set(_aocl_saved_libdir "${CMAKE_INSTALL_LIBDIR}")
-endif()
-if(DEFINED CACHE{CMAKE_INSTALL_INCLUDEDIR} AND NOT "${CMAKE_INSTALL_INCLUDEDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_INCLUDEDIR}" STREQUAL "include")
-  set(_aocl_saved_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
-endif()
-if(DEFINED CACHE{CMAKE_INSTALL_BINDIR} AND NOT "${CMAKE_INSTALL_BINDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_BINDIR}" STREQUAL "bin")
-  set(_aocl_saved_bindir "${CMAKE_INSTALL_BINDIR}")
-endif()
+# Capture current values immediately (from command-line -D or cache); restore after include.
+set(_aocl_saved_libdir "${CMAKE_INSTALL_LIBDIR}")
+set(_aocl_saved_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+set(_aocl_saved_bindir "${CMAKE_INSTALL_BINDIR}")
 
 # Use GNUInstallDirs for standard install paths
 include(GNUInstallDirs)
 
 # Restore superproject-provided install dirs so install() and package config use them
-if(_aocl_saved_libdir)
+if(_aocl_saved_libdir AND NOT _aocl_saved_libdir STREQUAL "lib" AND NOT _aocl_saved_libdir STREQUAL "lib64")
   set(CMAKE_INSTALL_LIBDIR "${_aocl_saved_libdir}" CACHE PATH "Object code libraries" FORCE)
 endif()
-if(_aocl_saved_includedir)
+if(_aocl_saved_includedir AND NOT _aocl_saved_includedir STREQUAL "include")
   set(CMAKE_INSTALL_INCLUDEDIR "${_aocl_saved_includedir}" CACHE PATH "C header files" FORCE)
 endif()
-if(_aocl_saved_bindir)
+if(_aocl_saved_bindir AND NOT _aocl_saved_bindir STREQUAL "bin")
   set(CMAKE_INSTALL_BINDIR "${_aocl_saved_bindir}" CACHE PATH "User executables" FORCE)
 endif()
 
