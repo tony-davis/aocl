@@ -7,39 +7,29 @@ cmake_minimum_required(VERSION 3.26.0)
 if(NOT DEFINED AOCL_SINGLE_LIBRARY_NAME)
     set(AOCL_SINGLE_LIBRARY_NAME "aocl")
 endif()
-project(${AOCL_SINGLE_LIBRARY_NAME} LANGUAGES C CXX)
 
-# Preserve install dirs set by a superproject (e.g. TheRock's lib/host-math layout)
-# before GNUInstallDirs overwrites them (it uses CACHE FORCE for defaults).
-# Capture current values immediately (from command-line -D or cache); restore after include.
+# Capture install dirs from parent/cache before project() runs. When included via
+# add_subdirectory(), the parent may have set CMAKE_INSTALL_* (or -D on the command line).
+# project() and include(GNUInstallDirs) overwrite these with defaults; restore after.
 set(_aocl_saved_libdir "${CMAKE_INSTALL_LIBDIR}")
 set(_aocl_saved_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
 set(_aocl_saved_bindir "${CMAKE_INSTALL_BINDIR}")
-message(STATUS "[AOCL] Before GNUInstallDirs - saved LIBDIR='${_aocl_saved_libdir}' INCLUDEDIR='${_aocl_saved_includedir}' BINDIR='${_aocl_saved_bindir}'")
+
+project(${AOCL_SINGLE_LIBRARY_NAME} LANGUAGES C CXX)
 
 # Use GNUInstallDirs for standard install paths
 include(GNUInstallDirs)
 
-# Restore superproject-provided install dirs so install() and package config use them
+# Restore parent-provided install dirs so install() and package config use them.
 if(_aocl_saved_libdir AND NOT _aocl_saved_libdir STREQUAL "lib" AND NOT _aocl_saved_libdir STREQUAL "lib64")
   set(CMAKE_INSTALL_LIBDIR "${_aocl_saved_libdir}" CACHE PATH "Object code libraries" FORCE)
-  message(STATUS "[AOCL] Restored LIBDIR to '${_aocl_saved_libdir}'")
-else()
-  message(STATUS "[AOCL] No restore for LIBDIR (saved='${_aocl_saved_libdir}'); keeping '${CMAKE_INSTALL_LIBDIR}'")
 endif()
 if(_aocl_saved_includedir AND NOT _aocl_saved_includedir STREQUAL "include")
   set(CMAKE_INSTALL_INCLUDEDIR "${_aocl_saved_includedir}" CACHE PATH "C header files" FORCE)
-  message(STATUS "[AOCL] Restored INCLUDEDIR to '${_aocl_saved_includedir}'")
-else()
-  message(STATUS "[AOCL] No restore for INCLUDEDIR (saved='${_aocl_saved_includedir}'); keeping '${CMAKE_INSTALL_INCLUDEDIR}'")
 endif()
 if(_aocl_saved_bindir AND NOT _aocl_saved_bindir STREQUAL "bin")
   set(CMAKE_INSTALL_BINDIR "${_aocl_saved_bindir}" CACHE PATH "User executables" FORCE)
-  message(STATUS "[AOCL] Restored BINDIR to '${_aocl_saved_bindir}'")
-else()
-  message(STATUS "[AOCL] No restore for BINDIR (saved='${_aocl_saved_bindir}'); keeping '${CMAKE_INSTALL_BINDIR}'")
 endif()
-message(STATUS "[AOCL] Final install dirs: LIBDIR='${CMAKE_INSTALL_LIBDIR}' INCLUDEDIR='${CMAKE_INSTALL_INCLUDEDIR}' BINDIR='${CMAKE_INSTALL_BINDIR}'")
 
 # Set the build configurations
 if(NOT DEFINED CMAKE_CONFIGURATION_TYPES)
