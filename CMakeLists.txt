@@ -9,8 +9,34 @@ if(NOT DEFINED AOCL_SINGLE_LIBRARY_NAME)
 endif()
 project(${AOCL_SINGLE_LIBRARY_NAME} LANGUAGES C CXX)
 
+# Preserve install dirs set by a superproject (e.g. TheRock's lib/host-math layout)
+# before GNUInstallDirs overwrites them (it uses CACHE FORCE for defaults).
+set(_aocl_saved_libdir "")
+set(_aocl_saved_includedir "")
+set(_aocl_saved_bindir "")
+if(DEFINED CACHE{CMAKE_INSTALL_LIBDIR} AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "lib" AND NOT "${CMAKE_INSTALL_LIBDIR}" STREQUAL "lib64")
+  set(_aocl_saved_libdir "${CMAKE_INSTALL_LIBDIR}")
+endif()
+if(DEFINED CACHE{CMAKE_INSTALL_INCLUDEDIR} AND NOT "${CMAKE_INSTALL_INCLUDEDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_INCLUDEDIR}" STREQUAL "include")
+  set(_aocl_saved_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+endif()
+if(DEFINED CACHE{CMAKE_INSTALL_BINDIR} AND NOT "${CMAKE_INSTALL_BINDIR}" STREQUAL "" AND NOT "${CMAKE_INSTALL_BINDIR}" STREQUAL "bin")
+  set(_aocl_saved_bindir "${CMAKE_INSTALL_BINDIR}")
+endif()
+
 # Use GNUInstallDirs for standard install paths
 include(GNUInstallDirs)
+
+# Restore superproject-provided install dirs so install() and package config use them
+if(_aocl_saved_libdir)
+  set(CMAKE_INSTALL_LIBDIR "${_aocl_saved_libdir}" CACHE PATH "Object code libraries" FORCE)
+endif()
+if(_aocl_saved_includedir)
+  set(CMAKE_INSTALL_INCLUDEDIR "${_aocl_saved_includedir}" CACHE PATH "C header files" FORCE)
+endif()
+if(_aocl_saved_bindir)
+  set(CMAKE_INSTALL_BINDIR "${_aocl_saved_bindir}" CACHE PATH "User executables" FORCE)
+endif()
 
 # Set the build configurations
 if(NOT DEFINED CMAKE_CONFIGURATION_TYPES)
@@ -443,9 +469,9 @@ else()
             add_library (${PROJECT_NAME}-static STATIC ${OBJECT_FILES})
             set_target_properties(${PROJECT_NAME}-static PROPERTIES LINKER_LANGUAGE CXX)
             set_target_properties(${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-            install(TARGETS ${PROJECT_NAME}-static LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-                    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            install(TARGETS ${PROJECT_NAME}-static LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                    RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
                     )
         endif()
     else()
