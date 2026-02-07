@@ -129,4 +129,4 @@ file(GLOB_RECURSE utils_obj_files LIST_DIRECTORIES false ${utils_build_path}/*\.
 list(APPEND OBJECT_FILES ${utils_obj_files})
 
 # Install the Utils headers
-install(DIRECTORY ${CMAKE_BINARY_DIR}/aocl-utils/install_package/include/ DESTINATION include)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/aocl-utils/install_package/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
